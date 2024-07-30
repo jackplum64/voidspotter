@@ -171,6 +171,9 @@ yolov[0-9]*.pt
 #Ignore runs directory
 runs/
 
+#Ignore output directory
+output/
+
 
 
 #Test

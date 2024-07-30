@@ -7,7 +7,7 @@ names: ['good_void']
 
 roboflow:
   workspace: voidspotter
-  project: voidspotter_001
+  project: voidspotter2
   version: 1
   license: CC BY 4.0
-  url: https://universe.roboflow.com/voidspotter/voidspotter_001/dataset/1
+  url: https://universe.roboflow.com/voidspotter/voidspotter2/dataset/1

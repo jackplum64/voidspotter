@@ -1,8 +1,8 @@
 
-voidspotter_001 - v1 2024-07-16 7:27am
+voidspotter2 - v1 2024-07-16 8:22pm
 ==============================
 
-This dataset was exported via roboflow.com on July 16, 2024 at 7:27 AM GMT
+This dataset was exported via roboflow.com on July 16, 2024 at 8:49 PM GMT
 
 Roboflow is an end-to-end computer vision platform that helps you
 * collaborate with your team on computer vision projects
@@ -17,10 +17,12 @@ visit https://github.com/roboflow/notebooks
 
 To find over 100k other datasets and pre-trained models, visit https://universe.roboflow.com
 
-The dataset includes 263 images.
-Good_void are annotated in YOLO v5 PyTorch format.
+The dataset includes 538 images.
+Good_void-dk3H are annotated in YOLO v5 PyTorch format.
 
 The following pre-processing was applied to each image:
+* Auto-orientation of pixel data (with EXIF-orientation stripping)
+* Resize to 640x640 (Stretch)
 
 No image augmentation techniques were applied.
 

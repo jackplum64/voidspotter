@@ -1,0 +1,1 @@
+yolo train model=yolov8l.pt data = config.yaml

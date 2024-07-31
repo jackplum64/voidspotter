@@ -119,10 +119,11 @@ def main():
     model = get_model(model_path)
 
     images_dir = '/home/jackplum/Documents/projects/voidspotter/outputchops'
-    output_dir = '/home/jackplum/Documents/projects/voidspotter/outputchopsbboxes'
+    output_dir = '/home/jackplum/Documents/projects/voidspotter/outputchopsbboxes2'
 
     images = load_images_from_folder(images_dir)
 
+    # Run the ML model once in each direction
     for orig_image, filename in images:
         rotated_images = rotate_image(orig_image)
         colors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (0, 255, 255)]
@@ -132,6 +133,7 @@ def main():
             rotated_bboxes = rotate_bounding_boxes(bboxes, img.shape, rotation_flag)
             draw_bounding_boxes(rotated_bboxes, orig_image, colors[itr])
 
+    # Run the ML model once in each direction, again
     for orig_image, filename in images:
         rotated_images = rotate_image(orig_image)
         colors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (0, 255, 255)]
@@ -140,6 +142,11 @@ def main():
             bboxes = get_bounding_boxes(model, img)
             rotated_bboxes = rotate_bounding_boxes(bboxes, img.shape, rotation_flag)
             draw_bounding_boxes(rotated_bboxes, orig_image, colors[itr])
+
+    # Run the ML model once in the original direction
+    #for img, filename in images:
+    #    bboxes = get_bounding_boxes(model, img)
+    #    draw_bounding_boxes(bboxes, img, (0, 255, 0)) # color is in (b,g,r)
         
 
     save_images_to_folder(images, output_dir)

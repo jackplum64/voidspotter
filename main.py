@@ -4,6 +4,11 @@ import os
 import numpy as np
 import math
 
+# TO USE:
+    # in main(), set model_path to your voidspotter/exp20/weights/best.pt
+    # in main(), set images_dir to a folder full of .jpg files you want to run the model on
+    # in main(), set output_dir to a folder you wish to save the output files to
+    # to force CPU usage, un-comment the two lines with a triple hashtag
 
 def get_bounding_boxes(model, image):
     results = model(image, size=640)
@@ -76,7 +81,7 @@ def rotate_bounding_boxes(bboxes, image_shape, rotation_flag):
 def get_model(model_path):
     try:
         model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, force_reload=True)
-        #model.to('cpu')
+        ###model.to('cpu')
         print(f"Model is loaded on: {next(model.parameters()).device}")
         return model
     except Exception as e:
@@ -109,7 +114,7 @@ def save_images_to_folder(images, folder):
 
 
 def main():
-    #os.environ['CUDA_VISIBLE_DEVICES'] = ''
+    ###os.environ['CUDA_VISIBLE_DEVICES'] = ''
     model_path = '/home/jackplum/Documents/projects/yolov5/runs/train/exp20/weights/best.pt'
     model = get_model(model_path)
 

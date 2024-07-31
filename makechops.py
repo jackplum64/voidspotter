@@ -9,6 +9,13 @@ import pandas as pd
 from tqdm import tqdm
 import time
 
+# To Use:
+# This program was duct-taped together from components of gbvd/build_data
+# To use it, run the script with an argument referencing the image to be chopped
+# Additionally you can specify box size and x/y offset
+# Example command line call:
+# python /home/jackplum/Documents/projects/voidspotter/makechops.py origdata/1_001 --box-size 100 --x-offset 0 --y-offset 0
+
 def doesRectangleOverlap(rect, x1, y1, x2, y2):
     box_x1, box_y1 = rect[0]
     box_x2, box_y2 = rect[1]

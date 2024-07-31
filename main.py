@@ -3,6 +3,7 @@ import cv2
 import os
 import numpy as np
 import math
+import time
 
 # TO USE:
     # in main(), set model_path to your voidspotter/exp20/weights/best.pt
@@ -114,15 +115,18 @@ def save_images_to_folder(images, folder):
 
 
 def main():
+    print('STARTING')
+    t1 = time.perf_counter()
     ###os.environ['CUDA_VISIBLE_DEVICES'] = ''
     model_path = '/home/jackplum/Documents/projects/yolov5/runs/train/exp20/weights/best.pt'
     model = get_model(model_path)
 
     images_dir = '/home/jackplum/Documents/projects/voidspotter/outputchops'
-    output_dir = '/home/jackplum/Documents/projects/voidspotter/outputchopsbboxes2'
+    output_dir = '/home/jackplum/Documents/projects/voidspotter/outputchopsbboxes3'
 
     images = load_images_from_folder(images_dir)
 
+    t2 = time.perf_counter()
     # Run the ML model once in each direction
     for orig_image, filename in images:
         rotated_images = rotate_image(orig_image)
@@ -133,6 +137,7 @@ def main():
             rotated_bboxes = rotate_bounding_boxes(bboxes, img.shape, rotation_flag)
             draw_bounding_boxes(rotated_bboxes, orig_image, colors[itr])
 
+    t3 = time.perf_counter()
     # Run the ML model once in each direction, again
     for orig_image, filename in images:
         rotated_images = rotate_image(orig_image)
@@ -150,6 +155,12 @@ def main():
         
 
     save_images_to_folder(images, output_dir)
+    t4 = time.perf_counter()
+
+    print(f'Total Time: {t4 - t1}')
+    print(f'Loading Time: {t2 - t1}')
+    print(f'First Processing Time: {t3 - t2}')
+    print(f'Second Processing Time: {t4 - t3}')
 
 
 if __name__ == "__main__":

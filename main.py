@@ -14,7 +14,7 @@ def get_bounding_boxes(model, image):
 def draw_bounding_boxes(bboxes, image, color):
     for box in bboxes:
         x1, y1, x2, y2, conf, _ = box
-        color = tuple(math.sqrt(math.sqrt(conf))*val for val in color)
+        color = tuple(conf*val for val in color)
         x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
         cv2.rectangle(image, (x1, y1), (x2, y2), color=color, thickness=1)
     
@@ -76,7 +76,7 @@ def rotate_bounding_boxes(bboxes, image_shape, rotation_flag):
 def get_model(model_path):
     try:
         model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, force_reload=True)
-        model.to('cpu')
+        #model.to('cpu')
         print(f"Model is loaded on: {next(model.parameters()).device}")
         return model
     except Exception as e:
@@ -109,7 +109,7 @@ def save_images_to_folder(images, folder):
 
 
 def main():
-    os.environ['CUDA_VISIBLE_DEVICES'] = ''
+    #os.environ['CUDA_VISIBLE_DEVICES'] = ''
     model_path = '/home/jackplum/Documents/projects/yolov5/runs/train/exp20/weights/best.pt'
     model = get_model(model_path)
 
@@ -117,6 +117,15 @@ def main():
     output_dir = '/home/jackplum/Documents/projects/voidspotter/outputchopsbboxes'
 
     images = load_images_from_folder(images_dir)
+
+    for orig_image, filename in images:
+        rotated_images = rotate_image(orig_image)
+        colors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (0, 255, 255)]
+
+        for itr, (img, rotation_flag) in enumerate(rotated_images):
+            bboxes = get_bounding_boxes(model, img)
+            rotated_bboxes = rotate_bounding_boxes(bboxes, img.shape, rotation_flag)
+            draw_bounding_boxes(rotated_bboxes, orig_image, colors[itr])
 
     for orig_image, filename in images:
         rotated_images = rotate_image(orig_image)

@@ -2,16 +2,7 @@ import torch
 import cv2
 import os
 import numpy as np
-
-def draw_multiple_bounding_boxes(model, orig_image):
-    images = rotate_image(orig_image)
-    colors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (0, 255, 255)]
-
-    for itr, (img, rotation_flag) in enumerate(images):
-        bboxes = get_bounding_boxes(model, img)
-        rotated_bboxes = rotate_bounding_boxes(bboxes, img.shape, rotation_flag)
-        draw_bounding_boxes(rotated_bboxes, orig_image, colors[itr])
-
+import math
 
 
 def get_bounding_boxes(model, image):
@@ -23,6 +14,7 @@ def get_bounding_boxes(model, image):
 def draw_bounding_boxes(bboxes, image, color):
     for box in bboxes:
         x1, y1, x2, y2, conf, _ = box
+        color = tuple(math.sqrt(math.sqrt(conf))*val for val in color)
         x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
         cv2.rectangle(image, (x1, y1), (x2, y2), color=color, thickness=1)
     
@@ -121,13 +113,20 @@ def main():
     model_path = '/home/jackplum/Documents/projects/yolov5/runs/train/exp20/weights/best.pt'
     model = get_model(model_path)
 
-    images_dir = '/home/jackplum/Documents/projects/voidspotter/origdata'
-    output_dir = '/home/jackplum/Documents/projects/voidspotter/output'
+    images_dir = '/home/jackplum/Documents/projects/voidspotter/outputchops'
+    output_dir = '/home/jackplum/Documents/projects/voidspotter/outputchopsbboxes'
 
     images = load_images_from_folder(images_dir)
 
-    for image, filename in images:
-        draw_multiple_bounding_boxes(model, image)
+    for orig_image, filename in images:
+        rotated_images = rotate_image(orig_image)
+        colors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (0, 255, 255)]
+
+        for itr, (img, rotation_flag) in enumerate(rotated_images):
+            bboxes = get_bounding_boxes(model, img)
+            rotated_bboxes = rotate_bounding_boxes(bboxes, img.shape, rotation_flag)
+            draw_bounding_boxes(rotated_bboxes, orig_image, colors[itr])
+        
 
     save_images_to_folder(images, output_dir)
 

@@ -171,11 +171,11 @@ yolov[0-9]*.pt
 #Ignore runs directory
 runs/
 
-#Ignore output directory
+#Ignore output directories
 output/
-
-#Ignore any images
-.png
+outputchops/
+outputchopsbboxes/
+outputchopsbboxes*/
 
 
 

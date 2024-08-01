@@ -11,8 +11,24 @@ import time
     # in main(), set output_dir to a folder you wish to save the output files to
     # to force CPU usage, un-comment the two lines with a triple hashtag
 
+
+class ImageClass:
+    def __init__(self, image, filename):
+        self.image = image
+        self.filename = filename
+        self.size = image.shape
+        self.bboxes = np.empty((0,6))
+        self.classification = None
+        self.pass_count = 0
+
+    def classify(self):
+        if self.bboxes.size == 0:
+            self.classification = 'novoid'
+        else:
+            self.classification = 'void'
+
 def get_bounding_boxes(model, image):
-    results = model(image, size=640)
+    results = model(image, size=75)
     bounding_boxes = results.xyxy[0].cpu().numpy()  # numpy array [x1, y1, x2, y2, confidence, class]
     return bounding_boxes
 
@@ -77,7 +93,29 @@ def rotate_bounding_boxes(bboxes, image_shape, rotation_flag):
     return np.array(rotated_bboxes)
 
 
+def process_one_pass(model, images):
+    for img_obj in images:
+        bboxes = get_bounding_boxes(model, img_obj.image)
+        img_obj.bboxes = bboxes
+        draw_bounding_boxes(bboxes, img_obj.image, (0, 255, 0))  # color is in (b,g,r)
+        img_obj.pass_count += 1
 
+
+def process_four_cardinal_passes(model, images):
+    for img_obj in images:
+        rotated_images = rotate_image(img_obj.image)
+        colors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (0, 255, 255)]
+
+        for itr, (img, rotation_flag) in enumerate(rotated_images):
+            bboxes = get_bounding_boxes(model, img)
+            rotated_bboxes = rotate_bounding_boxes(bboxes, img.shape, rotation_flag)
+            draw_bounding_boxes(rotated_bboxes, img_obj.image, colors[itr])
+
+            if rotated_bboxes.size != 0:
+                img_obj.bboxes = np.concatenate((img_obj.bboxes, rotated_bboxes))
+
+        
+        img_obj.pass_count += 4
 
 def get_model(model_path):
     try:
@@ -97,70 +135,49 @@ def load_images_from_folder(folder):
             img_path = os.path.join(folder, filename)
             img = cv2.imread(img_path)
             if img is not None:
-                images.append((img, filename))
+                images.append(ImageClass(img, filename))
     except Exception as e:
         print(f"Error loading images: {e}")
     return images
 
 
 def save_images_to_folder(images, folder):
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+    void_folder = os.path.join(folder, 'void')
+    no_void_folder = os.path.join(folder, 'novoid')
+
+    if not os.path.exists(void_folder):
+        os.makedirs(void_folder)
+    if not os.path.exists(no_void_folder):
+        os.makedirs(no_void_folder)
+
     try:
-        for i, (image, filename) in enumerate(images):
-            output_path = os.path.join(folder, filename)
-            cv2.imwrite(output_path, image)
+        for img_obj in images:
+            if img_obj.classification == 'void':
+                output_path = os.path.join(void_folder, img_obj.filename)
+            else:
+                output_path = os.path.join(no_void_folder, img_obj.filename)
+
+            cv2.imwrite(output_path, img_obj.image)
     except Exception as e:
         print(f"Error saving images: {e}")
 
 
 def main():
-    print('STARTING')
-    t1 = time.perf_counter()
     ###os.environ['CUDA_VISIBLE_DEVICES'] = ''
-    model_path = '/home/jackplum/Documents/projects/yolov5/runs/train/exp20/weights/best.pt'
+    model_path = '/home/jackplum/Documents/projects/voidspotter/exp20/weights/best.pt'
     model = get_model(model_path)
 
     images_dir = '/home/jackplum/Documents/projects/voidspotter/outputchops'
-    output_dir = '/home/jackplum/Documents/projects/voidspotter/outputchopsbboxes3'
+    output_dir = '/home/jackplum/Documents/projects/voidspotter/outputchopsbboxes5'
 
     images = load_images_from_folder(images_dir)
 
-    t2 = time.perf_counter()
-    # Run the ML model once in each direction
-    for orig_image, filename in images:
-        rotated_images = rotate_image(orig_image)
-        colors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (0, 255, 255)]
+    process_four_cardinal_passes(model, images)
 
-        for itr, (img, rotation_flag) in enumerate(rotated_images):
-            bboxes = get_bounding_boxes(model, img)
-            rotated_bboxes = rotate_bounding_boxes(bboxes, img.shape, rotation_flag)
-            draw_bounding_boxes(rotated_bboxes, orig_image, colors[itr])
-
-    t3 = time.perf_counter()
-    # Run the ML model once in each direction, again
-    for orig_image, filename in images:
-        rotated_images = rotate_image(orig_image)
-        colors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (0, 255, 255)]
-
-        for itr, (img, rotation_flag) in enumerate(rotated_images):
-            bboxes = get_bounding_boxes(model, img)
-            rotated_bboxes = rotate_bounding_boxes(bboxes, img.shape, rotation_flag)
-            draw_bounding_boxes(rotated_bboxes, orig_image, colors[itr])
-
-    # Run the ML model once in the original direction
-    #for img, filename in images:
-    #    bboxes = get_bounding_boxes(model, img)
-    #    draw_bounding_boxes(bboxes, img, (0, 255, 0)) # color is in (b,g,r)
-        
+    for img_obj in images:
+        img_obj.classify()
 
     save_images_to_folder(images, output_dir)
-    t4 = time.perf_counter()
-
-    print(f'Total Time: {t4 - t1}')
-    print(f'Loading Time: {t2 - t1}')
-    print(f'First Processing Time: {t3 - t2}')
-    print(f'Second Processing Time: {t4 - t3}')
 
 
 if __name__ == "__main__":

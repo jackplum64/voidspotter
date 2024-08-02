@@ -16,19 +16,34 @@ class ImageClass:
     def __init__(self, image, filename):
         self.image = image
         self.filename = filename
-        self.size = image.shape
+        self.shape = image.shape
         self.bboxes = np.empty((0,6))
         self.classification = None
         self.pass_count = 0
 
     def classify(self):
-        if self.bboxes.size == 0:
+        score = (np.sum(self.bboxes[:, 4])) / self.pass_count
+        print(f'Filename: {self.filename}')
+        print(f'Passcount: {self.pass_count}')
+        print(f'Col4 Score: {np.sum(self.bboxes[:, 4])}')
+        print(f'bbox count: {self.bboxes.size / 6}')
+        print(f'Score: {score}')
+        if score <= 0.05:
             self.classification = 'novoid'
+        elif score <= 0.15:
+            self.classification = 'probably_novoid'
+        elif score <= 0.75:
+            self.classification = 'maybe_void'
+        elif score <= 0.9:
+            self.classification = 'probably_void'
         else:
             self.classification = 'void'
+        print(f'Class: {self.classification}')
+        print()
 
-def get_bounding_boxes(model, image):
-    results = model(image, size=75)
+
+def get_bounding_boxes(model, image, size):
+    results = model(image, size=size)
     bounding_boxes = results.xyxy[0].cpu().numpy()  # numpy array [x1, y1, x2, y2, confidence, class]
     return bounding_boxes
 
@@ -95,7 +110,7 @@ def rotate_bounding_boxes(bboxes, image_shape, rotation_flag):
 
 def process_one_pass(model, images):
     for img_obj in images:
-        bboxes = get_bounding_boxes(model, img_obj.image)
+        bboxes = get_bounding_boxes(model, img_obj.image, img_obj.shape[0])
         img_obj.bboxes = bboxes
         draw_bounding_boxes(bboxes, img_obj.image, (0, 255, 0))  # color is in (b,g,r)
         img_obj.pass_count += 1
@@ -105,17 +120,18 @@ def process_four_cardinal_passes(model, images):
     for img_obj in images:
         rotated_images = rotate_image(img_obj.image)
         colors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (0, 255, 255)]
+        image_size = img_obj.shape[0]
 
         for itr, (img, rotation_flag) in enumerate(rotated_images):
-            bboxes = get_bounding_boxes(model, img)
+            bboxes = get_bounding_boxes(model, img, image_size)
             rotated_bboxes = rotate_bounding_boxes(bboxes, img.shape, rotation_flag)
             draw_bounding_boxes(rotated_bboxes, img_obj.image, colors[itr])
 
             if rotated_bboxes.size != 0:
                 img_obj.bboxes = np.concatenate((img_obj.bboxes, rotated_bboxes))
-
-        
+   
         img_obj.pass_count += 4
+
 
 def get_model(model_path):
     try:
@@ -142,20 +158,35 @@ def load_images_from_folder(folder):
 
 
 def save_images_to_folder(images, folder):
+    novoid_folder = os.path.join(folder, 'novoid')
+    probably_novoid_folder = os.path.join(folder, 'probably_novoid')
+    maybe_void_folder = os.path.join(folder, 'maybe_void')
+    probably_void_folder = os.path.join(folder, 'probably_void')
     void_folder = os.path.join(folder, 'void')
-    no_void_folder = os.path.join(folder, 'novoid')
 
+    if not os.path.exists(novoid_folder):
+        os.makedirs(novoid_folder)
+    if not os.path.exists(probably_novoid_folder):
+        os.makedirs(probably_novoid_folder)
+    if not os.path.exists(maybe_void_folder):
+        os.makedirs(maybe_void_folder)
+    if not os.path.exists(probably_void_folder):
+        os.makedirs(probably_void_folder)
     if not os.path.exists(void_folder):
         os.makedirs(void_folder)
-    if not os.path.exists(no_void_folder):
-        os.makedirs(no_void_folder)
 
     try:
         for img_obj in images:
-            if img_obj.classification == 'void':
+            if img_obj.classification == 'novoid':
+                output_path = os.path.join(novoid_folder, img_obj.filename)
+            elif img_obj.classification == 'probably_novoid':
+                output_path = os.path.join(probably_novoid_folder, img_obj.filename)
+            elif img_obj.classification == 'maybe_void':
+                output_path = os.path.join(maybe_void_folder, img_obj.filename)
+            elif img_obj.classification == 'probably_void':
+                output_path = os.path.join(probably_void_folder, img_obj.filename)
+            elif img_obj.classification == 'void':
                 output_path = os.path.join(void_folder, img_obj.filename)
-            else:
-                output_path = os.path.join(no_void_folder, img_obj.filename)
 
             cv2.imwrite(output_path, img_obj.image)
     except Exception as e:

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import argparse
 import pathlib
 import os
 import numpy as np
@@ -9,12 +8,20 @@ import pandas as pd
 from tqdm import tqdm
 import time
 
-# To Use:
-# This program was duct-taped together from components of gbvd/build_data
-# To use it, run the script with an argument referencing the image to be chopped
-# Additionally you can specify box size and x/y offset
-# Example command line call:
-# python /home/jackplum/Documents/projects/voidspotter/makechops.py origdata/1_001 --box-size 100 --x-offset 0 --y-offset 0
+# Configuration
+inputs = [
+    "origdata/1_001", "origdata/1_002", "origdata/1_003", "origdata/1_004", "origdata/1_005", "origdata/1_006", "origdata/1_007", "origdata/1_008", "origdata/1_009", "origdata/1_010",
+    "origdata/2_001", "origdata/2_002", "origdata/2_003", "origdata/2_004", "origdata/2_005", "origdata/2_006", "origdata/2_007", "origdata/2_008", "origdata/2_009",
+    "origdata/3_001", "origdata/3_002", "origdata/3_003", "origdata/3_004", "origdata/3_005", "origdata/3_006", "origdata/3_007", "origdata/3_008", "origdata/3_009", "origdata/3_010",
+    "origdata/4_001", "origdata/4_002", "origdata/4_003", "origdata/4_004", "origdata/4_005", "origdata/4_006", "origdata/4_007", "origdata/4_008", "origdata/4_009",
+    "origdata/5_001", "origdata/5_002", "origdata/5_003", "origdata/5_004", "origdata/5_005", "origdata/5_006", "origdata/5_007", "origdata/5_008", "origdata/5_009", "origdata/5_010", "origdata/5_011",
+    "origdata/6_001", "origdata/6_002", "origdata/6_003", "origdata/6_004", "origdata/6_005", "origdata/6_006", "origdata/6_007", "origdata/6_008", "origdata/6_009", "origdata/6_010"
+]
+intermediate = None  # Name of directory to store intermediate outputs. If none, outputs will not be generated
+void_cutoff = 15  # Parameter determining void size cutoff
+box_size = 100  # Size (in pixels) of image chops
+x_offset = 0  # Parameter determining how much to offset the mini micrographs in the X direction
+y_offset = 0  # Parameter determining how much to offset the mini micrographs in the Y direction
 
 def doesRectangleOverlap(rect, x1, y1, x2, y2):
     box_x1, box_y1 = rect[0]
@@ -48,23 +55,13 @@ def phi(x, y, bounding_boxes):
 
 start = time.perf_counter()
 
-parser = argparse.ArgumentParser('Image Chopper')
-parser.add_argument('inputs', nargs='*')
-parser.add_argument('--intermediate', default=None, help='Name of directory to store intermediate outputs. If none, outputs will not be generated')
-parser.add_argument('--void-cutoff', default=15, help="Parameter determining void size cutoff")
-parser.add_argument('--box-size', default=100, type=int, help="Size (in pixels) of image chops")
-parser.add_argument('--x-offset', default=0, type=int, help='Parameter determining how much to offset the mini micrographs in the X direction')
-parser.add_argument('--y-offset', default=0, type=int, help='Parameter determining how much to offset the mini micrographs in the Y direction')
-
-args = parser.parse_args()
-
 class record():
     pass
 records = []
 
-for input in args.inputs:
+for input in inputs:
     base = str(pathlib.Path(input).absolute()).split('.')[0]
-    path_img = pathlib.Path(base+".jpg")
+    path_img = pathlib.Path(base + ".jpg")
     if path_img.exists():
         rec = record()
         rec.stem = path_img.stem
@@ -76,9 +73,9 @@ for input in args.inputs:
 
 def getName(desc):
     rec.tmp_cntr += 1
-    if args.intermediate:
-        if not os.path.isdir(args.intermediate): os.mkdir(args.intermediate)
-        return "{}/{}_{:05d}_{}.png".format(args.intermediate, rec.stem, rec.tmp_cntr-1, desc)
+    if intermediate:
+        if not os.path.isdir(intermediate): os.mkdir(intermediate)
+        return "{}/{}_{:05d}_{}.png".format(intermediate, rec.stem, rec.tmp_cntr - 1, desc)
     return None
 
 ## This is the master loop over all input data sets
@@ -87,19 +84,17 @@ for rec in records:
     rec.width = rec.img_micrograph.shape[1]
     rec.height = rec.img_micrograph.shape[0]
 
-    if args.intermediate: cv2.imwrite(getName("Original"), rec.img_micrograph)
+    if intermediate: cv2.imwrite(getName("Original"), rec.img_micrograph)
 
     #
     # CHOP AND IDENTIFY THROWAWAY / VOID / NO VOID BOXES
     #
     print("Chopping and classifying micrographs")
     rectangles = []
-    x_offset = args.x_offset
-    y_offset = args.y_offset
 
-    for x_min in tqdm(range(int(args.box_size / 2) + x_offset, rec.width - args.box_size, args.box_size)):
-        for y_min in range(int(args.box_size / 2) + y_offset, rec.height - args.box_size, args.box_size):
-            rect = (np.array((x_min, y_min)), np.array((x_min + args.box_size, y_min + args.box_size)))
+    for x_min in tqdm(range(int(box_size / 2) + x_offset, rec.width - box_size, box_size)):
+        for y_min in range(int(box_size / 2) + y_offset, rec.height - box_size, box_size):
+            rect = (np.array((x_min, y_min)), np.array((x_min + box_size, y_min + box_size)))
             rectangles.append(rect)
 
     if not os.path.isdir("./outputchops"):

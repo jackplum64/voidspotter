@@ -25,8 +25,8 @@ class ImageClass:
         score = (np.sum(self.bboxes[:, 4])) / self.pass_count
         print(f'Filename: {self.filename}')
         print(f'Passcount: {self.pass_count}')
-        print(f'Col4 Score: {np.sum(self.bboxes[:, 4])}')
-        print(f'bbox count: {self.bboxes.size / 6}')
+        print(f'Col4 Sum: {np.sum(self.bboxes[:, 4])}')
+        print(f'Bbox Count: {self.bboxes.size / 6}')
         print(f'Score: {score}')
         if score <= 0.05:
             self.classification = 'novoid'
@@ -199,7 +199,7 @@ def main():
     model = get_model(model_path)
 
     images_dir = '/home/jackplum/Documents/projects/voidspotter/outputchops'
-    output_dir = '/home/jackplum/Documents/projects/voidspotter/outputchopsbboxes5'
+    output_dir = '/home/jackplum/Documents/projects/voidspotter/outputchopsclassedALL'
 
     images = load_images_from_folder(images_dir)
 

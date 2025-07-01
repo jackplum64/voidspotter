@@ -2,8 +2,7 @@ import torch
 import cv2
 import os
 import numpy as np
-import math
-import time
+from pathlib import Path
 
 # TO USE:
     # in main(), set model_path to your voidspotter/exp20/weights/best.pt
@@ -198,8 +197,13 @@ def main():
     model_path = '/home/jackplum/Documents/projects/voidspotter/exp20/weights/best.pt'
     model = get_model(model_path)
 
+    # ensure output dir
+    script_dir = Path(__file__).parent
+    out_dir: Path = script_dir / "tmp"
+    out_dir.mkdir(exist_ok=True)  # <-- creates tmp/ if missing
+
     images_dir = '/home/jackplum/Documents/projects/voidspotter/outputchops'
-    output_dir = '/home/jackplum/Documents/projects/voidspotter/outputchopsclassedALL'
+    output_dir = out_dir
 
     images = load_images_from_folder(images_dir)
 
